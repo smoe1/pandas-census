@@ -14,7 +14,7 @@ counties = censusdata.geographies(censusdata.censusgeo([('state', '53'), ('count
 
 #data = censusdata.download('acs5',2015,censusdata.censusgeo([('state','53'),('county', '071'),('block group','*')]),
 #        ['B06007PR_020E','B06007PR_021E','B06007PR_023E','B06007PR_024E'])
-data = censusdata.download('acs5',2015,censusdata.censusgeo([('state','53'),('county', '071'),('block group','*')]),
+data = censusdata.download('acs5',2015,censusdata.censusgeo([('state','53'),('county', '*'),('block group','*')]),
         ['B08301_001E', 'B08301_010E'])
 print(tabulate(data, headers='keys', tablefmt='psql'))
 column_names = ['total_transpo', 'total_public_transpo']
@@ -34,14 +34,29 @@ for index in data.index.tolist():
     
 data.index = new_indices
 data['county_name'] = county_names
+data['fips'] = data.index
 
-import plotly.figure_factory as ff
+from urllib.request import urlopen
+import json
+with urlopen('https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json') as response:
+        counties = json.load(response)
 
-fig = ff.create_choropleth(fips=data.index, 
-                                   scope=['New York'],
-                                   values=data.percent_public_transpo, 
-                                   title='NY Public Transit Use by County', 
-                                   legend_title='% Public Transit')
+        counties["features"][0]
+
+
+import plotly.express as px
+fig = px.choropleth(data, geojson=counties, locations='fips', color='percent_public_transpo',
+      color_continuous_scale="Viridis",
+      range_color=(0, 1),
+      scope="usa",
+      labels={'percent_public_transpo':'WA Public Transit Use by County'})
+
+#import plotly.figure_factory as ff
+#fig = ff.create_choropleth(fips=data.index, 
+#                                   scope=['Washington'],
+#                                   values=data.percent_public_transpo, 
+#                                   title='WA Public Transit Use by County', 
+#                                   legend_title='% Public Transit')
 fig.layout.template = None
 fig.show()
 
